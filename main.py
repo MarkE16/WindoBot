@@ -12,24 +12,6 @@ from private import token
 
 client = commands.Bot(command_prefix='%', help_command=None, intents=discord.Intents().all())
 
-"""
-TO DO:
-
-Stuff to get done:
-- Music command
-- Meme command
-- Make an about cmd for the bot ( TEMPORARILY DONE )
-- Randomizer type command
-- Number guessing game (with difficulties) ( EASY MODE FINISHED )
-- Add a cooldown to gaining EXP
-
-Stuff to fix:
-- Roles with the same permission disabled will go through the first one, which means it could add the wrong role. (Mute command)
-
-Stuff to improve:
-- None
-"""
-
 reports = []
 registoredUsers = {}
 levels = {}
@@ -45,7 +27,7 @@ except:
 # Will set the bot to online.
 @client.event
 async def on_ready():
-	await client.change_presence(status=discord.Status.online, activity=discord.Game("I'm currently in the BETA phase. Please reach out to Windo#8834 to report any issues."))
+	await client.change_presence(status=discord.Status.online, activity=discord.Game("I'm currently in the ALPHA phase. Please reach out to Windo#8834 to report any issues."))
 	print("Successfully went online.")
 
 @client.event
@@ -293,7 +275,7 @@ async def unban(ctx, *, member):
 @client.command()
 @commands.has_permissions(send_messages=True)
 async def changelog(ctx):
-	latestChangelog = discord.Embed(title="Changelog for BETA v0.2.1", description=
+	latestChangelog = discord.Embed(title="Changelog for Alpha v0.2.0.1", description=
 		"- Fixed command permissions. (hopefully)"
 	)
 	latestChangelog.add_field(name="Requested by", value=ctx.message.author, inline=True)
