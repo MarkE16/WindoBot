@@ -99,6 +99,7 @@ async def on_reaction_add(reaction, user):
 
 # Help command - Prints the list of commands.
 @client.command()
+@commands.has_permissions(send_messages=True)
 async def help(ctx):
 	embed = discord.Embed(title="Help | Need a command?", description=
 	"<.> help - Lists out all commands.\n"
@@ -130,6 +131,7 @@ async def on_command_error(ctx, error):
 
 # Sends the about information about the bot
 @client.command()
+@commands.has_permissions(send_messages=True)
 async def about(ctx):
 	windo = await client.fetch_user(371802974470668321)
 	aboutEmb = discord.Embed(title="About the Bot | About Me!", description=
@@ -141,6 +143,7 @@ async def about(ctx):
 
 # Deletes the sender's message, and sends the same message, as if the bot only said it, and not the sender!
 @client.command()
+@commands.has_permissions(send_messages=True)
 async def say(ctx, message):
 	await ctx.message.delete()
 	return await ctx.channel.send(message)
@@ -169,6 +172,7 @@ Plays a song!
 
 # Mute a person.
 @client.command()
+@commands.has_permissions(mute_members=True)
 async def mute(ctx, member: discord.Member, *, reason=None):
 	guild = ctx.guild
 
@@ -186,6 +190,7 @@ async def mute(ctx, member: discord.Member, *, reason=None):
 
 # Unmute a person.
 @client.command()
+@commands.has_permissions(mute_members=True)
 async def unmute(ctx, member: discord.Member):
 	if ctx.channel.permissions_for(member).send_messages:
 		return await ctx.channel.send(":x: This person is not muted.")
@@ -197,6 +202,7 @@ async def unmute(ctx, member: discord.Member):
 
 # Kick a person.
 @client.command()
+@commands.has_permissions(kick_members=True)
 async def kick(ctx, member: discord.Member, *, reason=None):
 	if member.guild_permissions.mute_members or member.guild_permissions.administrator or member.guild_permissions.ban_members or member.guild_permissions.kick_members:
 		return await ctx.channel.send(":x: You cannot kick this person.")
@@ -206,6 +212,8 @@ async def kick(ctx, member: discord.Member, *, reason=None):
 
 # Report a user.
 @client.command()
+@commands.has_permissions(send_messages=True)
+@commands.cooldown(1, 20, commands.BucketType.user)
 async def report(ctx, member: discord.Member, *, reason):
 	global reports
 	guild = ctx.guild
@@ -263,40 +271,36 @@ async def report(ctx, member: discord.Member, *, reason):
 # # Ban command
 @client.command()
 @commands.has_permissions(ban_members=True)
-#@commands.has_role('Admin, Administrator, Mod, Moderator, Staff')
 async def ban(ctx, member: discord.Member, *, reason=None):
-    await member.ban(reason=reason)
-    await ctx.channel.send(f':white_check_mark: Successfully banned {member} for {reason}.')
+  await member.ban(reason=reason)
+  await ctx.channel.send(f':white_check_mark: Successfully banned {member} for {reason}.')
 
 
 # # # Unban Command
 @client.command()
-#@commands.has_permissions(unban_members=True)
-#@commands.has_role('Admin, Administrator, Mod, Moderator, Staff')
+@commands.has_permissions(unban_members=True)
 async def unban(ctx, *, member):
-    banned_users = await ctx.guild.bans()
-    member_name, member_discriminator = member.split('#')
+	banned_users = await ctx.guild.bans()
+	member_name, member_discriminator = member.split('#')
 
-    for ban_entry in banned_users:
-        user = ban_entry.user
+	for ban_entry in banned_users:
+		user = ban_entry.user
 
-        if(user.name, user.discriminator) == (member_name, member_discriminator):
-            await ctx.guild.unban(user)
-            await ctx.send(f':white_check_mark: Successfully unbanned {user.name}.')
+		if(user.name, user.discriminator) == (member_name, member_discriminator):
+			await ctx.guild.unban(user)
+			await ctx.send(f':white_check_mark: Successfully unbanned {user.name}.')
 
 @client.command()
+@commands.has_permissions(send_messages=True)
 async def changelog(ctx):
-	latestChangelog = discord.Embed(title="Changelog for BETA v0.2", description=
-		"- Added a level system. (server specfic!)\n"
-		"- Added a (still in the works) settings command.\n"
-		"- Added a command that will allow you to send DMs to other server members.\n"
-		"- Made improvements to allow certain features to work within specific servers.\n"
-		"- Fixed bugs. Yeah."
+	latestChangelog = discord.Embed(title="Changelog for BETA v0.2.1", description=
+		"- Fixed command permissions. (hopefully)"
 	)
 	latestChangelog.add_field(name="Requested by", value=ctx.message.author, inline=True)
 	return await ctx.channel.send(embed=latestChangelog)
 
 @client.command()
+@commands.has_permissions(send_messages=True)
 async def numguess(ctx):
 	difficulty = discord.Embed(title="Select Difficulty", description=
 		"e) Easy\n"
@@ -367,6 +371,7 @@ async def numguess(ctx):
 
 # Opens the settings menu to change, you know, SETTINGS
 @client.command()
+@commands.has_permissions(send_messages=True)
 async def settings(ctx):
 	global serverSettings
 	global sendToMods, sendToAdmins, sendToOwner
@@ -448,6 +453,7 @@ async def settings(ctx):
 
 # Opens the level profile of the user
 @client.command()
+@commands.has_permissions(send_messages=True)
 async def level(ctx, member: discord.Member=None):
 	global registoredUsers
 	user = ctx.message.author
@@ -495,6 +501,7 @@ async def level(ctx, member: discord.Member=None):
 					await ctx.channel.send(embed=userStats)
 
 @client.command()
+@commands.has_permissions(send_messages=True)
 async def dm(ctx, member: discord.Member, *, message):
 	
 	receiver = await client.fetch_user(member.id)
