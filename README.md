@@ -13,7 +13,7 @@ Hello! This is the github page for my Discord bot! In the future (hopefully), I 
 So far it only has little commands such as utility commands and small "fun" commands. However, the bot is still in production so there will be more features in the future.
 
 # Current Bot Version
-The bot is currently in BETA 0.2. So I'm still working on the bot but allowing people to use it as I develop it. You can view the changelog [here](https://github.com/MarkE16/WindoBot#changelog).
+The bot is currently in BETA 0.2.1. So I'm still working on the bot but allowing people to use it as I develop it. You can view the changelog [here](https://github.com/MarkE16/WindoBot#changelog).
 
 # Changelog
 Here you can view the changelog of the bot, where you can view all the updates:  
