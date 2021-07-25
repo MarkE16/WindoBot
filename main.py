@@ -12,14 +12,6 @@ from private import token
 
 client = commands.Bot(command_prefix='%', help_command=None, intents=discord.Intents().all())
 
-
-"""
-Current problem:
-
-Cant get list/dictionary of users with their values to load.
-
-"""
-
 """
 TO DO:
 
@@ -29,8 +21,7 @@ Stuff to get done:
 - Make an about cmd for the bot ( TEMPORARILY DONE )
 - Randomizer type command
 - Number guessing game (with difficulties) ( EASY MODE FINISHED )
-- Create a settings command to alter, well, SETTINGS.
-- Level System
+- Add a cooldown to gaining EXP
 
 Stuff to fix:
 - Roles with the same permission disabled will go through the first one, which means it could add the wrong role. (Mute command)
@@ -40,11 +31,14 @@ Stuff to improve:
 """
 
 reports = []
-registoredUsers = {} # ???
+registoredUsers = {}
 levels = {}
+serverSettings = {}
+sendToMods, sendToAdmins, sendToOwner = True, False, False
 
 try:
 	reports, registoredUsers, levels = json.load(open("reportsregisteredusers.py", "r"))
+	serverSettings = json.load(open("settings.py", "r"))
 except:
 	print("[x] Couldn't load information.")
 
@@ -65,7 +59,7 @@ async def on_message(message):
 		try:
 			if str(user.id) in registoredUsers[str(message.guild.id)]:
 				levels[str(message.guild.id)][str(user.id)][1] -= random.randint(0, 10)
-				print(f"{user}: {levels[str(message.guild.id)][str(user.id)][1]}")
+				json.dump((reports, registoredUsers, levels), open("reportsregisteredusers.py", "w"))
 				if levels[str(message.guild.id)][str(user.id)][1] <= 0:
 					levels[str(message.guild.id)][str(user.id)][0] = levels[str(message.guild.id)][str(user.id)][0] + 1
 					levels[str(message.guild.id)][str(user.id)][1] = levels[str(message.guild.id)][str(user.id)][1] + 50 * levels[str(message.guild.id)][str(user.id)][2]
@@ -118,7 +112,9 @@ async def help(ctx):
 	"<.> ban - Ban a user.\n"
 	"<.> unban - Unban a user.\n"
 	"<.> report - Report a user to moderators.\n"
-	"<.> level - View your or someone else's level. [NEW!]"
+	"<.> level - View your or someone else's level. [NEW!]\n"
+	"<.> settings - Alter certain settings to your liking. [NEW!]\n"
+	"<.> dm - DM a user with a message (PLEASE DO NOT ABUSE THIS). [NEW!]"
 	)
 	return await ctx.channel.send(embed=embed)
 
@@ -221,24 +217,47 @@ async def report(ctx, member: discord.Member, *, reason):
 	user = str(member)
 	reports.append(user)
 	json.dump((reports, registoredUsers, levels), open("reportsregisteredusers.py", "w"))
-	windo = await client.fetch_user(371802974470668321)
 	
-	""" Code to send to moderators with the valid permissions (see line 167-178 for the permissions) """
-	# async for mem in guild.fetch_members():
-	# 	if mem != member.bot:
-	# 		if mem.guild_permissions.administrator or mem.guild_permissions.mute_members or mem.guild_permissions.ban_members or mem.guild_permissions.kick_members:
-	# 			if mem != client.user:
-	# 				await discord.DMChannel.send(mem, 
-	# 					"```\n"
-	# 					"[NEW REPORT]\n"
-	# 					f"Reported user: {member}\n"
-	# 					f"Reported for: {reason}\n"
-	# 					f"Report #{len(reports)}\n"
-	# 					"```"
-	# 				)
-			#print("Report successfully sent to moderators.")
-	await discord.DMChannel.send(windo, f"Report #{len(reports)}")
-	success = discord.Embed(title="Success!", description="Your report was sent to the moderators of the server.")
+	if serverSettings[str(ctx.guild.id)][0][0]:
+		""" Code to send to moderators with the valid permissions (see line 167-178 for the permissions) """
+		async for mem in guild.fetch_members():
+			if mem != member.bot:
+				if mem.guild_permissions.administrator or mem.guild_permissions.mute_members or mem.guild_permissions.ban_members or mem.guild_permissions.kick_members:
+					if mem != client.user:
+						await discord.DMChannel.send(mem, 
+							"```\n"
+							"[NEW REPORT]\n"
+							f"Reported user: {member}\n"
+							f"Reported for: {reason}\n"
+							f"Report #{len(reports)}\n"
+							"```"
+						)
+		print("Report successfully sent to moderators.")
+	elif serverSettings[str(ctx.guild.id)][0][1]:
+		async for mem in guild.fetch_members():
+			if mem != member.bot:
+				if mem.guild_permissions.administrator:
+					if mem != client.user:
+						await discord.DMChannel.send(mem, 
+							"```\n"
+							"[NEW REPORT]\n"
+							f"Reported user: {member}\n"
+							f"Reported for: {reason}\n"
+							f"Report #{len(reports)}\n"
+							"```"
+						)
+		print("Report sucessfully sent to administrators.")
+	elif serverSettings[str(ctx.guild.id)][0][2]:
+		owner = await client.fetch_user(ctx.guild.owner.id)
+		await discord.DMChannel.send(owner, 
+			"```\n"
+			"[NEW REPORT]\n"
+			f"Reported user: {member}\n"
+			f"Reported for: {reason}\n"
+			f"Report #{len(reports)}\n"
+			"```"
+		)
+	success = discord.Embed(title="Success!", description="Your report was sent.")
 	return await ctx.channel.send(embed=success)
 
 # # Ban command
@@ -267,8 +286,12 @@ async def unban(ctx, *, member):
 
 @client.command()
 async def changelog(ctx):
-	latestChangelog = discord.Embed(title="Changelog for BETA v0.1", description=
-		"- Beta release of the bot ( Not released to public though lol )"
+	latestChangelog = discord.Embed(title="Changelog for BETA v0.2", description=
+		"- Added a level system. (server specfic!)\n"
+		"- Added a (still in the works) settings command.\n"
+		"- Added a command that will allow you to send DMs to other server members.\n"
+		"- Made improvements to allow certain features to work within specific servers.\n"
+		"- Fixed bugs. Yeah."
 	)
 	latestChangelog.add_field(name="Requested by", value=ctx.message.author, inline=True)
 	return await ctx.channel.send(embed=latestChangelog)
@@ -345,10 +368,82 @@ async def numguess(ctx):
 # Opens the settings menu to change, you know, SETTINGS
 @client.command()
 async def settings(ctx):
+	global serverSettings
+	global sendToMods, sendToAdmins, sendToOwner
+	# active = [a for a in [sendToMods, sendToAdmins, sendToOwner] if a is True]
+	active = ""
+	
+	if str(ctx.guild.id) not in serverSettings:
+		serverSettings[str(ctx.guild.id)] = []
+		print(serverSettings)
+		serverSettings[str(ctx.guild.id)].append([sendToMods, sendToAdmins, sendToOwner])
+		print(serverSettings)
+	
+	if serverSettings[str(ctx.guild.id)][0][0] is True:
+		active = "Send to Mods"
+	elif serverSettings[str(ctx.guild.id)][0][1] is True:
+		active = "Send to Admins"
+	elif serverSettings[str(ctx.guild.id)][0][2] is True:
+		active = "Send to Owner"
+	# else:
+	# 	if [sendToMods, sendToAdmins, sendToOwner] in serverSettings[str(ctx.guild.id)]:
+	# 		print("Boolean values already exist.")
+	# 	else:
+	# 		serverSettings[str(ctx.guild.id)].append([sendToMods, sendToAdmins, sendToOwner])
+	# 		print(serverSettings)
+
+	def check(m):
+		return m.author.id == ctx.author.id
+
 	main = discord.Embed(title="Settings | Need to change something?", description=
-	"<This does nothing yet. This will be updated soon.>"
+	"a) Change Report Receivers"
 	)
-	return await ctx.channel.send(embed=main)
+	await ctx.channel.send(embed=main)
+	message = await client.wait_for("message", check=check)
+
+	if message.content.lower() == 'a':
+		if ctx.message.author == ctx.guild.owner:
+			reportSettings = discord.Embed(title="Change Who Receives Reports", description=
+			"1) Send to people with moderator powers (e.g kick, mute, ban members).\n"
+			"2) Send only to people with administrator powers.\n"
+			"3) Send only to the owner of the server."
+			)
+			reportSettings.add_field(name="Current Active Setting", value=active, inline=True)
+			await ctx.channel.send(embed=reportSettings)
+
+			change = await client.wait_for("message", check=check)
+			try:
+				changeInt = int(change.content)
+			except:
+				await ctx.channel.send("Invalid choice. Rerun the command to try again.")
+			if changeInt == 1:
+				if serverSettings[str(ctx.guild.id)][0][0]:
+					await ctx.channel.send(":x: This setting is already active.")
+				else:
+					serverSettings[str(ctx.guild.id)][0][0], serverSettings[str(ctx.guild.id)][0][1], serverSettings[str(ctx.guild.id)][0][2] = True, False, False
+					await ctx.channel.send(":white_check_mark: Settings applied.")
+					json.dump(serverSettings, open("settings.py", "w"))
+			elif changeInt == 2:
+				if serverSettings[str(ctx.guild.id)][0][1]:
+					await ctx.channel.send(":x: This setting is already active.")
+				else:
+					serverSettings[str(ctx.guild.id)][0][0], serverSettings[str(ctx.guild.id)][0][1], serverSettings[str(ctx.guild.id)][0][2] = False, True, False
+					await ctx.channel.send(":white_check_mark: Settings applied.")
+					json.dump(serverSettings, open("settings.py", "w"))
+			elif changeInt == 3:
+				if serverSettings[str(ctx.guild.id)][0][2]:
+					await ctx.channel.send(":x: This setting is already active.")
+				else:
+					serverSettings[str(ctx.guild.id)][0][0], serverSettings[str(ctx.guild.id)][0][1], serverSettings[str(ctx.guild.id)][0][2] = False, False, True
+					await ctx.channel.send(":white_check_mark: Settings applied.")
+					json.dump(serverSettings, open("settings.py", "w"))
+			else:
+				await ctx.channel.send("Invalid choice. Rerun the command to try again.")
+		else:
+			await ctx.channel.send(":x: Only the owner can edit this setting.")
+	else:
+		await ctx.channel.send("Invalid choice. Rerun the command to try again.")
+
 
 
 # Opens the level profile of the user
@@ -398,5 +493,16 @@ async def level(ctx, member: discord.Member=None):
 					userStats.add_field(name="Requested by", value=user, inline=True)
 					userStats.set_thumbnail(url=member.avatar_url)
 					await ctx.channel.send(embed=userStats)
+
+@client.command()
+async def dm(ctx, member: discord.Member, *, message):
+	
+	receiver = await client.fetch_user(member.id)
+	try:
+		await discord.DMChannel.send(receiver, f"Message from {ctx.message.author}: {str(message)}")
+	except:
+		return await ctx.channel.send(":x: There seemed to be an issue when attempting to DM this user. It might be possible that the user has their DMs closed, or even has me blocked.")
+	sent = discord.Embed(title="Success!", description=f"Your message was sent to {member}.")
+	await ctx.channel.send(embed=sent)
 
 client.run(token)
