@@ -116,10 +116,10 @@ async def on_command_error(ctx, error):
 @commands.has_permissions(send_messages=True)
 async def about(ctx):
 	windo = await client.fetch_user(371802974470668321)
-	aboutEmb = discord.Embed(title="About the Bot | About Me!", description=
-	"[ Information about the bot goes here. (Coming soon) ]"
+	aboutEmb = discord.Embed(title="About the Bot", description=
+	"[ Github link here ]"
 	)
-	aboutEmb.add_field(name="WindoBot v 0.1", value=f"Developed by: {windo}", inline=True)
+	aboutEmb.add_field(name="WindoBot Alpha v1.1.1", value=f"Developed by: {windo}", inline=True)
 	aboutEmb.set_author(name=client.user, icon_url=client.user.avatar_url)
 	return await ctx.channel.send(embed=aboutEmb)
 
@@ -275,7 +275,7 @@ async def unban(ctx, *, member):
 @client.command()
 @commands.has_permissions(send_messages=True)
 async def changelog(ctx):
-	latestChangelog = discord.Embed(title="Changelog for Alpha v0.2.0.1", description=
+	latestChangelog = discord.Embed(title="Changelog for Alpha v1.1.1", description=
 		"- Fixed command permissions. (hopefully)"
 	)
 	latestChangelog.add_field(name="Requested by", value=ctx.message.author, inline=True)
