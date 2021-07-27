@@ -1,5 +1,6 @@
 import discord
 import asyncio
+from discord.ext.commands.errors import MissingPermissions
 import praw
 import youtube_api
 import json
@@ -119,8 +120,8 @@ async def about(ctx):
 	aboutEmb = discord.Embed(title="About the Bot", description=
 	"[ Github link here ]"
 	)
-	aboutEmb.add_field(name="WindoBot Alpha v1.1.1", value=f"Developed by: {windo}", inline=True)
-	aboutEmb.set_author(name=client.user, icon_url=client.user.avatar_url)
+	aboutEmb.add_field(name="WindoBot Alpha v1.2.0", value=f"Developed by: {windo}", inline=True)
+	aboutEmb.set_thumbnail(url=client.user.avatar_url)
 	return await ctx.channel.send(embed=aboutEmb)
 
 # Deletes the sender's message, and sends the same message, as if the bot only said it, and not the sender!
@@ -129,6 +130,11 @@ async def about(ctx):
 async def say(ctx, message):
 	await ctx.message.delete()
 	return await ctx.channel.send(message)
+
+@say.error
+async def say_error(ctx, error):
+	if isinstance(error, commands.MissingRequiredArgument):
+		await ctx.channel.send(":x: Missing required arguments to run this command.\n \nSyntax: `%say <message>`")
 
 """
 **NOT WORKING**
@@ -154,7 +160,7 @@ Plays a song!
 
 # Mute a person.
 @client.command()
-@commands.has_permissions(mute_members=True)
+@commands.has_permissions(manage_messages=True)
 async def mute(ctx, member: discord.Member, *, reason=None):
 	guild = ctx.guild
 
@@ -170,9 +176,16 @@ async def mute(ctx, member: discord.Member, *, reason=None):
 			await member.add_roles(role)
 			return await ctx.channel.send(f":white_check_mark: Muted {member} for {reason}.")
 
+@mute.error
+async def mute_error(ctx, error):
+	if isinstance(error, commands.MissingPermissions):
+		await ctx.channel.send(":x: You do not have the valid permissions to run this command. Permissions needed: `manage_messages`.")
+	elif isinstance(error, commands.MissingRequiredArgument):
+		await ctx.channel.send(":x: Missing required arguments to run this command.\n \nSyntax: `%mute <@member/memberID> <reason>`")
+
 # Unmute a person.
 @client.command()
-@commands.has_permissions(mute_members=True)
+@commands.has_permissions(manage_messages=True)
 async def unmute(ctx, member: discord.Member):
 	if ctx.channel.permissions_for(member).send_messages:
 		return await ctx.channel.send(":x: This person is not muted.")
@@ -181,6 +194,13 @@ async def unmute(ctx, member: discord.Member):
 		if not role.permissions.send_messages:
 			await member.remove_roles(role)
 			return await ctx.channel.send(f":white_check_mark: {member} was unmuted.")
+
+@unmute.error
+async def unmute_error(ctx, error):
+	if isinstance(error, commands.MissingPermissions):
+		await ctx.channel.send(":x: You do not have the valid permissions to run this command. Permissions needed: `manage_messages`.")
+	elif isinstance(error, commands.MissingRequiredArgument):
+		await ctx.channel.send(":x: Missing required arguments to run this command.\n \nSyntax: `%unmute <@member/memberID>`")
 
 # Kick a person.
 @client.command()
@@ -191,6 +211,13 @@ async def kick(ctx, member: discord.Member, *, reason=None):
 	
 	await member.kick(reason=reason)
 	return await ctx.channel.send(f":white_check_mark: Kicked {member} for {reason}.")
+
+@kick.error
+async def kick_error(ctx, error):
+	if isinstance(error, commands.MissingPermissions):
+		await ctx.channel.send(":x: You do not have the valid permissions to run this command. Permissions needed: `kick_members`.")
+	elif isinstance(error, commands.MissingRequiredArgument):
+		await ctx.channel.send(":x: Missing required arguments to run this command.\n \nSyntax: `%kick <@member/memberID> <reason>`")
 
 # Report a user.
 @client.command()
@@ -250,6 +277,11 @@ async def report(ctx, member: discord.Member, *, reason):
 	success = discord.Embed(title="Success!", description="Your report was sent.")
 	return await ctx.channel.send(embed=success)
 
+@report.error
+async def report_error(ctx, error):
+	if isinstance(error, commands.MissingRequiredArgument):
+		await ctx.channel.send(":x: Missing required arguments to run this command.\n \nSyntax: `%report <@member/memberID> <reason>`")
+
 # # Ban command
 @client.command()
 @commands.has_permissions(ban_members=True)
@@ -257,10 +289,17 @@ async def ban(ctx, member: discord.Member, *, reason=None):
   await member.ban(reason=reason)
   await ctx.channel.send(f':white_check_mark: Successfully banned {member} for {reason}.')
 
+@ban.error
+async def ban_error(ctx, error):
+	if isinstance(error, commands.MissingPermissions):
+		await ctx.channel.send(":x: You do not have the valid permissions to run this command. Permissions needed: `ban_members`.")
+	elif isinstance(error, commands.MissingRequiredArgument):
+		await ctx.channel.send(":x: Missing required arguments to run this command.\n \nSyntax: `%ban <@member/memberID> <reason>`")
+
 
 # # # Unban Command
 @client.command()
-@commands.has_permissions(unban_members=True)
+@commands.has_permissions(ban_members=True)
 async def unban(ctx, *, member):
 	banned_users = await ctx.guild.bans()
 	member_name, member_discriminator = member.split('#')
@@ -272,10 +311,17 @@ async def unban(ctx, *, member):
 			await ctx.guild.unban(user)
 			await ctx.send(f':white_check_mark: Successfully unbanned {user.name}.')
 
+@unban.error
+async def unban_error(ctx, error):
+	if isinstance(error, commands.MissingPermissions):
+		await ctx.channel.send(":x: You do not have the valid permissions to run this command. Permissions needed: `ban_members`.")
+	elif isinstance(error, commands.MissingRequiredArgument):
+		await ctx.channel.send(":x: Missing required arguments to run this command.\n \nSyntax: `%unban <member#0000>`")
+
 @client.command()
 @commands.has_permissions(send_messages=True)
 async def changelog(ctx):
-	latestChangelog = discord.Embed(title="Changelog for Alpha v1.1.1", description=
+	latestChangelog = discord.Embed(title="Changelog for Alpha v1.2.0", description=
 		"- Fixed command permissions. (hopefully)"
 	)
 	latestChangelog.add_field(name="Requested by", value=ctx.message.author, inline=True)
@@ -493,5 +539,10 @@ async def dm(ctx, member: discord.Member, *, message):
 		return await ctx.channel.send(":x: There seemed to be an issue when attempting to DM this user. It might be possible that the user has their DMs closed, or even has me blocked.")
 	sent = discord.Embed(title="Success!", description=f"Your message was sent to {member}.")
 	await ctx.channel.send(embed=sent)
+
+@dm.error
+async def dm_error(ctx, error):
+	if isinstance(error, commands.MissingRequiredArgument):
+		await ctx.channel.send(":x: Missing required arguments to run this command.\n \nSyntax: `%dm <@member/memberID> <message>`")
 
 client.run(token)
