@@ -96,9 +96,10 @@ async def help(ctx):
 	"<.> ban - Ban a user.\n"
 	"<.> unban - Unban a user.\n"
 	"<.> report - Report a user to moderators.\n"
-	"<.> level - View your or someone else's level. [NEW!]\n"
-	"<.> settings - Alter certain settings to your liking. [NEW!]\n"
-	"<.> dm - DM a user with a message (PLEASE DO NOT ABUSE THIS). [NEW!]"
+	"<.> level - View your or someone else's level.\n"
+	"<.> settings - Alter certain settings to your liking.\n"
+	"<.> dm - DM a user with a message (PLEASE DO NOT ABUSE THIS).\n"
+	"<.> numguess - Play a number guessing game with 3 difficulties! [NEW!]"
 	)
 	return await ctx.channel.send(embed=embed)
 
@@ -120,7 +121,7 @@ async def about(ctx):
 	aboutEmb = discord.Embed(title="About the Bot", description=
 	"[ Github link here ]"
 	)
-	aboutEmb.add_field(name="WindoBot Alpha v1.2.0", value=f"Developed by: {windo}", inline=True)
+	aboutEmb.add_field(name="WindoBot Alpha v1.3.0", value=f"Developed by: {windo}", inline=True)
 	aboutEmb.set_thumbnail(url=client.user.avatar_url)
 	return await ctx.channel.send(embed=aboutEmb)
 
@@ -168,11 +169,11 @@ async def mute(ctx, member: discord.Member, *, reason=None):
 		return await ctx.channel.send(":x: You cannot mute this person.")
 	
 	for role in member.roles:
-		if not role.permissions.send_messages:
+		if role.name == "Muted" and not role.permissions.send_messages or not role.permissions.send_messages:
 			return await ctx.channel.send(":x: This person is already muted.")
 	
 	for role in guild.roles:
-		if not role.permissions.send_messages:
+		if role.name == "Muted" and not role.permissions.send_messages or not role.permissions.send_messages:
 			await member.add_roles(role)
 			return await ctx.channel.send(f":white_check_mark: Muted {member} for {reason}.")
 
@@ -191,7 +192,7 @@ async def unmute(ctx, member: discord.Member):
 		return await ctx.channel.send(":x: This person is not muted.")
 	
 	for role in member.roles:
-		if not role.permissions.send_messages:
+		if role.name == "Muted" and not role.permissions.send_messages or not role.permissions.send_messages:
 			await member.remove_roles(role)
 			return await ctx.channel.send(f":white_check_mark: {member} was unmuted.")
 
@@ -236,7 +237,7 @@ async def report(ctx, member: discord.Member, *, reason):
 	json.dump((reports, registoredUsers, levels), open("reportsregisteredusers.py", "w"))
 	
 	if serverSettings[str(ctx.guild.id)][0][0]:
-		""" Code to send to moderators with the valid permissions (see line 167-178 for the permissions) """
+		""" Code to send to moderators with the valid permissions """
 		async for mem in guild.fetch_members():
 			if mem != member.bot:
 				if mem.guild_permissions.administrator or mem.guild_permissions.mute_members or mem.guild_permissions.ban_members or mem.guild_permissions.kick_members:
@@ -321,8 +322,9 @@ async def unban_error(ctx, error):
 @client.command()
 @commands.has_permissions(send_messages=True)
 async def changelog(ctx):
-	latestChangelog = discord.Embed(title="Changelog for Alpha v1.2.0", description=
-		"- Fixed command permissions. (hopefully)"
+	latestChangelog = discord.Embed(title="Changelog for Alpha v1.3.0", description=
+		"- Added a command 'numguess'; A number guessing game with 3 difficulties.\n"
+		"- Made a slight improvement to the mute command."
 	)
 	latestChangelog.add_field(name="Requested by", value=ctx.message.author, inline=True)
 	return await ctx.channel.send(embed=latestChangelog)
@@ -347,8 +349,7 @@ async def numguess(ctx):
 		attempts = 5
 		botNum = random.randint(1, 10)
 		easyMode = discord.Embed(title="Number Guess Game | EASY MODE", description=
-		f"My number: ???\n"
-		"Your number: Awaiting choice..."
+		"My number: ???"
 		)
 		easyMode.add_field(name="Type your answer", value=
 		"Choose a number from 1-10.\n"
@@ -372,15 +373,14 @@ async def numguess(ctx):
 				return await ctx.channel.send(":x: Ops, looks like you ran out of attempts. Looks like I win!")
 			
 			# Check if the user's selection was out of range.
-			if guess > 20 or guess < 1:
+			if guess > 10 or guess < 1:
 				await ctx.channel.send(":x: You cannot enter a number above or below the selected range.")
 			
 			# If the guess was wrong, then lose an attempt and keep going.
 			if guess != botNum:
 				attempts = attempts	- 1
 				easyMode = discord.Embed(title="Number Guess Game | EASY MODE", description=
-				f"My number: ???\n"
-				"Your number: Awaiting choice..."
+				"My number: ???"
 				)
 				easyMode.add_field(name="Type your answer", value=
 				"Choose a number from 1-10.\n"
@@ -388,14 +388,122 @@ async def numguess(ctx):
 				)
 				await msg.edit(embed=easyMode)
 			elif guess == botNum:
+				easyMode = discord.Embed(title="Number Guess Game | EASY MODE", description=
+				f"My number: {botNum}"
+				)
+				easyMode.add_field(name="Type your answer", value=
+				"Choose a number from 1-10.\n"
+				f"Attempts remaining: {attempts}"
+				)
+				await msg.edit(embed=easyMode)
 				return await ctx.channel.send("Good job! You won!")
 			
 
 
 	elif message.content.lower() == 'm':
-		return await ctx.channel.send("Chose Medium")
+		attempts = 13
+		botNum = random.randint(1, 20)
+		mediumMode = discord.Embed(title="Number Guess Game | MEDIUM MODE", description=
+		"My number: ???"
+		)
+		mediumMode.add_field(name="Type your answer", value=
+		"Choose a number from 1-20.\n"
+		f"Attempts remaining: {attempts}"
+		)
+		msg = await ctx.channel.send(embed=mediumMode)
+
+		while True:
+			selection = await client.wait_for("message", check=check)
+
+			# Try to convert the user's selection into an integer, and to also check if what they sent wasn't a string.
+			try:
+				guess = int(selection.content)
+			except:
+				return await ctx.channel.send(":x: You didn't input a number. Run the command again to try again.")
+
+			await selection.delete() # Delete the user's selection.
+
+			# Game Over if run out of attempts
+			if attempts <= 1:
+				return await ctx.channel.send(":x: Ops, looks like you ran out of attempts. Looks like I win!")
+			
+			# Check if the user's selection was out of range.
+			if guess > 20 or guess < 1:
+				await ctx.channel.send(":x: You cannot enter a number above or below the selected range.")
+			
+			# If the guess was wrong, then lose an attempt and keep going.
+			if guess != botNum:
+				attempts = attempts	- 1
+				mediumMode = discord.Embed(title="Number Guess Game | MEDIUM MODE", description=
+				"My number: ???"
+				)
+				mediumMode.add_field(name="Type your answer", value=
+				"Choose a number from 1-20.\n"
+				f"Attempts remaining: {attempts}"
+				)
+				await msg.edit(embed=mediumMode)
+			elif guess == botNum:
+				mediumMode = discord.Embed(title="Number Guess Game | MEDIUM MODE", description=
+				f"My number: {botNum}"
+				)
+				mediumMode.add_field(name="Type your answer", value=
+				"Choose a number from 1-20.\n"
+				f"Attempts remaining: {attempts}"
+				)
+				await msg.edit(embed=mediumMode)
+				return await ctx.channel.send("Good job! You won!")
 	elif message.content.lower() == 'h':
-		return await ctx.channel.send("Chose Hard")
+		attempts = 18
+		botNum = random.randint(1, 30)
+		hardMode = discord.Embed(title="Number Guess Game | HARD MODE", description=
+		"My number: ???"
+		)
+		hardMode.add_field(name="Type your answer", value=
+		"Choose a number from 1-30.\n"
+		f"Attempts remaining: {attempts}"
+		)
+		msg = await ctx.channel.send(embed=hardMode)
+
+		while True:
+			selection = await client.wait_for("message", check=check)
+
+			# Try to convert the user's selection into an integer, and to also check if what they sent wasn't a string.
+			try:
+				guess = int(selection.content)
+			except:
+				return await ctx.channel.send(":x: You didn't input a number. Run the command again to try again.")
+
+			await selection.delete() # Delete the user's selection.
+
+			# Game Over if run out of attempts
+			if attempts <= 1:
+				return await ctx.channel.send(":x: Ops, looks like you ran out of attempts. Looks like I win!")
+			
+			# Check if the user's selection was out of range.
+			if guess > 30 or guess < 1:
+				await ctx.channel.send(":x: You cannot enter a number above or below the selected range.")
+			
+			# If the guess was wrong, then lose an attempt and keep going.
+			if guess != botNum:
+				attempts = attempts	- 1
+				hardMode = discord.Embed(title="Number Guess Game | HARD MODE", description=
+				"My number: ???"
+				)
+				hardMode.add_field(name="Type your answer", value=
+				"Choose a number from 1-30.\n"
+				f"Attempts remaining: {attempts}"
+				)
+				await msg.edit(embed=hardMode)
+			elif guess == botNum:
+				hardMode = discord.Embed(title="Number Guess Game | HARD MODE", description=
+				f"My number: {botNum}"
+				)
+				hardMode.add_field(name="Type your answer", value=
+				"Choose a number from 1-30.\n"
+				f"Attempts remaining: {attempts}"
+				)
+				await msg.edit(embed=hardMode)
+				return await ctx.channel.send("Good job! You won!")
 
 # Opens the settings menu to change, you know, SETTINGS
 @client.command()
@@ -403,7 +511,6 @@ async def numguess(ctx):
 async def settings(ctx):
 	global serverSettings
 	global sendToMods, sendToAdmins, sendToOwner
-	# active = [a for a in [sendToMods, sendToAdmins, sendToOwner] if a is True]
 	active = ""
 	
 	if str(ctx.guild.id) not in serverSettings:
@@ -517,9 +624,7 @@ async def level(ctx, member: discord.Member=None):
 			await ctx.channel.send(embed=error)
 		else:
 			for p in levels[str(ctx.guild.id)]:
-				print("LOOPING...")
 				if p == str(member.id):
-					print("USER LOCATED.")
 					userStats = discord.Embed(title=f"{member}'s Stats", description=
 					f"Level: **{levels[str(ctx.guild.id)][str(member.id)][0]}**\n"
 					f"EXP til next Level: **{levels[str(ctx.guild.id)][str(member.id)][0]}**"
